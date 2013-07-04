@@ -62,7 +62,7 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <a class="brand" href="{% url feedme-feed-list %}">FeedMe</a>
+            <a class="brand" href="{% url "feedme-feed-list" %}">FeedMe</a>
 
             <div class="nav-collapse collapse">
                 <p class="navbar-text pull-right">
@@ -74,10 +74,9 @@
                         {% else %}
                         {{ request.user.username }}
                         {% endif %}
-                      
                     </a>
                   {% else %}
-                    <a href="{% url auth_login %}" class="navbar-link">
+                    <a href="{% url "auth_login" %}" class="navbar-link">
                       Login
                     </a>
                   {% endif %}
@@ -85,13 +84,13 @@
                 <ul class="nav">
                   {% if request.user.is_authenticated %}
                     <li class="active">
-                      <a href="{% url feedme-feed-list %}">
+                      <a href="{% url "feedme-feed-list" %}">
                         My Feeds
                       </a>
                     </li>
                     <li><a href="#addFeed" data-toggle="modal">Add a Feed</a></li>
                     <li>
-                      <a href="{% url feedme-import-google-takeout %}">
+                      <a href="{% url "feedme-import-google-takeout" %}">
                         Import from Google
                       </a>
                     </li>

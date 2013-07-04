@@ -19,7 +19,7 @@
     function mark_read(item_id){
         $.ajax({
             type: "POST",
-            url: '{% url feedme-mark-as-read-ajax %}',
+            url: '{% url "feedme-mark-as-read-ajax" %}',
             data: {'feed_item_id': item_id},
         });
     }
