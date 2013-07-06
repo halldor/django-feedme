@@ -1,6 +1,7 @@
 from django.views.generic import ListView, FormView, CreateView
 from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
+from django.shortcuts import render
 
 from infuse.auth.permissions import LoginRequiredMixin
 
@@ -20,6 +21,7 @@ class FeedList(LoginRequiredMixin, ListView):
 
     def update_feeds(self, user):
         for feed in Feed.objects.filter(user=user):
+            # FIXME(halldor): this will fail if a feed has been created and is being processed by celery (has no last_upated)
             feed.update()
         return True
 
@@ -44,28 +46,37 @@ class FeedList(LoginRequiredMixin, ListView):
         return context
 
 
-class ImportView(LoginRequiredMixin, FormView):
-    template_name = 'feedme/takeout_form.html'
-    form_class = ImportFeedForm
-    success_url = 'feedme-feed-list'
-
-    def get_context_data(self, **kwargs):
-        context = super(ImportView, self).get_context_data(**kwargs)
-        context['add_form'] = AddFeedForm()
-        context['form'] = ImportFeedForm(user=self.request.user)
-        return context
-
-    def form_valid(self, form):
-        takeout = GoogleReaderTakeout(self.request.FILES['archive'])
-        for data in takeout.subscriptions():
-            Feed.objects.get_or_create(
-                url=data['xmlUrl'], title=data['title'],
-                user=self.request.user, last_update=None,
-                category=form.cleaned_data['category']
-            )
-        return HttpResponseRedirect(reverse(self.get_success_url()))
-
-
 class AddView(LoginRequiredMixin, AjaxableResponseMixin, CreateView):
     form_class = AddFeedForm
     model = Feed
+
+
+def import_from_takeout(request):
+    form = ImportFeedForm(request.POST, request.FILES, user=request.user)
+    logger.debug("Post data: %s" % request.POST)
+    if request.method.lower() == "post" and form.is_valid():
+        logger.debug("Import form valid.")
+        takeout = GoogleReaderTakeout(request.FILES['archive'])
+        for data in takeout.subscriptions():
+            if not data['xmlUrl']:
+                logger.info("Found feed without url. Dumping %s." % data['title'])
+                continue
+            if data['category']:
+                category, created = Category.objects.get_or_create(name=data['category'], user=request.user)
+                if created:
+                    logger.info("Created new category for user '%s': '%s'" % (request.user, data['category']))
+            else:
+                category = form.cleaned_data['category']
+            Feed.objects.get_or_create(
+                url=data['xmlUrl'], title=data['title'],
+                user=request.user, last_update=None,
+                category=category
+            )
+        return HttpResponseRedirect(reverse('feedme-feed-list'))
+
+    context = {
+        'add_form': AddFeedForm(),
+        'form': form,
+    }
+
+    return render(request, 'feedme/takeout_form.html', context)
