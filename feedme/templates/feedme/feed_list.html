@@ -20,7 +20,7 @@
     function mark_read(item_id){
         $.ajax({
             type: "POST",
-            url: '{% url feedme-mark-as-read-ajax %}',
+            url: '{% url "feedme-mark-as-read-ajax" %}',
             data: {'feed_item_id': item_id},
         });
     }
@@ -33,7 +33,7 @@
         <ul class="nav nav-list">
             <li class="nav-header">Feeds</li>
             {% for category in categories %}
-            <li class="nav-header"><a href="{% url feedme-feed-list-by-category category=category.slug %}"><span class='badge'>{{ category.get_unread_count }}</span> {{ category }}</a></li>
+            <li class="nav-header"><a href="{% url "feedme-feed-list-by-category" category=category.slug %}"><span class='badge'>{{ category.get_unread_count }}</span> {{ category }}</a></li>
             {% for feed in category.feed_set.all %}
                 <li><a href="{{ feed.get_absolute_url }}"><span class="badge">{{ feed.get_unread_count }}</span> {{ feed.title }}</a></li>
             {% endfor %}
@@ -43,4 +43,3 @@
     </div><!--/.well -->
 </div><!--/span-->
 {% endblock %}
-
